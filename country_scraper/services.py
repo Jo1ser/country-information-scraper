@@ -7,7 +7,6 @@ from twisted.internet.error import DNSLookupError, TimeoutError, TCPTimedOutErro
 from twisted.web._newclient import ResponseFailed
 import logging
 
-
 # Initialize Crochet
 setup()
 
@@ -17,10 +16,10 @@ errors = {}
 
 class CountrySpider(scrapy.Spider):
     name = 'country_spider'
-
     custom_settings = {
         'DOWNLOAD_DELAY': 0.5,
         'HTTPERROR_ALLOW_ALL': True,
+        'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
     }
 
     def __init__(self, criteria, *args, **kwargs):
@@ -63,23 +62,23 @@ class CountrySpider(scrapy.Spider):
             if data:
                 self.country_data.extend(data)
             else:
-                self.error = {'status': 404, 'message': 'Country not found.'}
+                self.error = {'status': 404, 'detail': 'Country not found.'}
         elif response.status == 404:
-            self.error = {'status': 404, 'message': 'Country not found.'}
+            self.error = {'status': 404, 'detail': 'Country not found.'}
         else:
             self.error = {
                 'status': response.status,
-                'message': 'An error occurred while fetching data.'
+                'detail': 'An error occurred while fetching data.'
             }
 
     def errback(self, failure):
         logging.error(f"Request failed with error: {failure}")
         if failure.check(DNSLookupError):
-            self.error = {'status': 503, 'message': 'DNS Lookup Error.'}
+            self.error = {'status': 503, 'detail': 'DNS Lookup Error.'}
         elif failure.check(TimeoutError, TCPTimedOutError, ResponseFailed):
-            self.error = {'status': 504, 'message': 'Connection timed out.'}
+            self.error = {'status': 504, 'detail': 'Connection timed out.'}
         else:
-            self.error = {'status': 500, 'message': 'An unexpected error occurred.'}
+            self.error = {'status': 500, 'detail': 'An unexpected error occurred.'}
 
 
 runner = CrawlerRunner()
@@ -96,7 +95,12 @@ def run_spider(criteria_key, criteria_value):
     def get_data(_):
         if crawler.spider.error:
             logging.error(f"Error from spider: {crawler.spider.error}")
-            errors[result_key] = crawler.spider.error
+            # Ensure the error dict includes 'status' and 'detail'
+            error = crawler.spider.error
+            errors[result_key] = {
+                'status': error.get('status', 500),
+                'detail': error.get('detail', 'An error occurred.')
+            }
         else:
             logging.info("Spider completed successfully.")
             scraped_data[result_key] = crawler.spider.country_data
@@ -128,11 +132,11 @@ async def fetch_country_info(
 
     # Input validation
     if not criteria:
-        return {"error": "No search criteria provided.", "status": 400}
+        return {"status": 400, "detail": "No search criteria provided."}
     if len(criteria) > 1:
         return {
-            "error": "Please provide only one search criterion at a time.",
-            "status": 400
+            "status": 400,
+            "detail": "Please provide only one search criterion at a time."
         }
 
     criteria_key, criteria_value = next(iter(criteria.items()))
@@ -145,12 +149,11 @@ async def fetch_country_info(
         error = errors.pop(result_key)
         return error
 
-    # Run the spider
     try:
         run_spider(criteria_key, criteria_value)
     except Exception as e:
         logging.error(f"Exception occurred while running spider: {e}")
-        return {"error": "An error occurred while processing your request.", "status": 500}
+        return {"status": 500, "detail": "An error occurred while processing your request."}
 
     while result_key not in scraped_data and result_key not in errors:
         await asyncio.sleep(0.1)

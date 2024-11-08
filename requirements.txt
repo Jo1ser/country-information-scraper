@@ -3,3 +3,6 @@ uvicorn
 scrapy
 crochet
 flake8
+pytest
+pytest-asyncio
+httpx

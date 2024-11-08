@@ -21,8 +21,10 @@ async def get_country(
         language=language,
         currency=currency,
     )
-    if 'error' in data:
-        status_code = data.get('status', 400)
-        message = data.get('message', data['error'])
-        raise HTTPException(status_code=status_code, detail=message)
+
+    # Check if the status code indicates an error
+    if isinstance(data, dict) and data.get('status', 200) >= 400:
+        status_code = data['status']
+        detail = data.get('detail', 'An error occurred.')
+        raise HTTPException(status_code=status_code, detail=detail)
     return data
