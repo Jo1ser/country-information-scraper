@@ -29,18 +29,23 @@ git clone https://github.com/yourusername/country-information-scraper.git
 cd country-information-scraper
 ```
 
-Replace yourusername with your GitHub username if you've forked the repository.
+Replace **yourusername** with your GitHub username if you've forked the repository.
 
 **2. Create a Virtual Environment**
 
-On Windows:
+- On Windows:
+
+```
 python -m venv venv
 venv\Scripts\activate
+```
 
-On macOS and Linux:
+- On macOS and Linux:
 
+```
 python3 -m venv venv
 source venv/bin/activate
+```
 
 **3. Upgrade pip (Optional but Recommended)**
 
@@ -70,9 +75,9 @@ uvicorn country_scraper.main:app --reload
 
 **2. Access the Application**
 
-API Root: http://127.0.0.1:8000/
-Interactive API Documentation (Swagger UI): http://127.0.0.1:8000/docs
-Alternative API Documentation (ReDoc): http://127.0.0.1:8000/redoc
+- API Root: http://127.0.0.1:8000/
+- Interactive API Documentation (Swagger UI): http://127.0.0.1:8000/docs
+- Alternative API Documentation (ReDoc): http://127.0.0.1:8000/redoc
 
 ## Running Tests
 
@@ -82,15 +87,15 @@ To ensure that everything is working correctly, run the test suite:
 pytest
 ```
 
-Usage
+## Usage
 
-```
-GET /countries/
-```
+**API Endpoint**
+
+**GET /countries/**
 
 Fetch country information based on a specific search criterion. Only one search criterion can be used per request.
 
-## Query Parameters
+**Query Parameters**
 
 - name: (string) Name of the country.
 - capital: (string) Capital city of the country.
@@ -99,13 +104,15 @@ Fetch country information based on a specific search criterion. Only one search 
 - language: (string) Language spoken in the country (use full language name, e.g., english).
 - currency: (string) Currency used in the country (e.g., USD, Euro).
 
-## Usage Notes
+**Usage Notes**
 
 - Single Criterion: Only one search criterion should be provided per request. Providing multiple criteria will result in a 400 Bad Request error.
 - Case Sensitivity: Search parameters are not case-sensitive.
 - Language Input: For the language parameter, use the full language name in English (e.g., english, spanish).
 
-## Examples
+**Examples**
+
+Fetch Country by Name
 
 Request:
 
@@ -141,7 +148,76 @@ Response (Status Code: 200):
 ]
 ```
 
-## Error Handling Examples
+**Fetch Country by Capital**
+
+Request:
+
+```
+GET /countries/?capital=Tokyo HTTP/1.1
+Host: 127.0.0.1:8000
+```
+
+Response (Status Code: 200):
+
+```
+[
+  {
+    "name": {
+      "common": "Japan",
+      "official": "Japan",
+      // ...
+    },
+    "capital": ["Tokyo"],
+    "region": "Asia",
+    "subregion": "Eastern Asia",
+    "languages": {
+      "jpn": "Japanese"
+    },
+    "currencies": {
+      "JPY": {
+        "name": "Japanese yen",
+        "symbol": "¥"
+      }
+    },
+    // Additional country details...
+  }
+]
+```
+
+**Fetch Countries by Language**
+
+Request:
+
+```
+GET /countries/?language=english HTTP/1.1
+Host: 127.0.0.1:8000
+```
+
+Response (Status Code: 200):
+
+```
+[
+  {
+    "name": {
+      "common": "United Kingdom",
+      "official": "United Kingdom of Great Britain and Northern Ireland",
+      // ...
+    },
+    // Additional country details...
+  },
+  {
+    "name": {
+      "common": "United States",
+      "official": "United States of America",
+      // ...
+    },
+    // Additional country details...
+  },
+  // More countries...
+]
+```
+
+**Error Handling Examples**
 
 No Criteria Provided
 
@@ -157,6 +233,40 @@ Response (Status Code: 400):
 ```
 {
   "detail": "No search criteria provided."
+}
+```
+
+Multiple Criteria Provided
+
+Request:
+
+```
+GET /countries/?name=Poland&capital=Warsaw HTTP/1.1
+Host: 127.0.0.1:8000
+```
+
+Response (Status Code: 400):
+
+```
+{
+  "detail": "Please provide only one search criterion at a time."
+}
+```
+
+Country Not Found
+
+Request:
+
+```
+GET /countries/?name=Atlantis HTTP/1.1
+Host: 127.0.0.1:8000
+```
+
+Response (Status Code: 404):
+
+```
+{
+  "detail": "Country not found."
 }
 ```
 
